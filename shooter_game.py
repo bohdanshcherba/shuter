@@ -12,7 +12,7 @@ clock = time.Clock()
 
 mixer.init()
 space = mixer.Sound("space.ogg")
-space.play()
+# space.play()2
 
 class Hero(sprite.Sprite):
     def __init__ (self, x, y, width, height, speed, img_name="rocket.png"):
@@ -62,19 +62,35 @@ class Enemy (Hero):
             self.rect.x = random.randint(50, 565)
             self.speed = random.randint(1,4)
             self.rect.y = -100
-        
+
+class Asteroid(Hero):   
+    def move(self): 
+        self.rect.y += self.speed
+        self.rect.x += self.speed
+        if self.rect.y > 560 or self.rect.x > 750:
+            self.rect.x = random.randint(-200, 200)
+            self.rect.y = -random.randint(50, 150)
 
 
 rocket = Player(350,400,35,85,5)
 
+# Створення НЛО
 enemys = sprite.Group()
 for i in range(5):
-    enemy1 = Enemy (random.randint(50, 565), -100, 100, 30, random.randint(1,4), "ufo.png")
+    enemy1 = Enemy (random.randint(50, 565), -100, 70, 30, random.randint(1,4), "ufo.png")
     enemys.add(enemy1)
-    
-font.init()
 
+# Створення астероїдів    
+asteroids = sprite.Group()
+for i in range(5):
+    asteroid = Asteroid(random.randint(-200, 200), -random.randint(50, 150), 30, 30, random.randint(1,3), "asteroid.png")
+    asteroids.add(asteroid)
+
+
+font.init()
 font1 = font.Font(None, 40)
+font_win = font.Font(None, 60)
+
 finish = False
 lifes = 3
 counter = 0
@@ -89,6 +105,21 @@ while game:
         if e.type == KEYDOWN:
             if e.key == K_SPACE:
                 rocket.fire()
+            if e.key == K_r:
+                lifes = 3
+                killed = 0
+                counter = 0
+                finish = False
+
+                for i in enemys:
+                    i.rect.y = -random.randint(50, 200)
+                    i.rect.x = random.randint(50, 565)
+
+                for i in asteroids:
+                    i.rect.y = -random.randint(50, 200)
+                    i.rect.x = random.randint(-200, 200)
+
+
 
     window.blit(bg, (0,0)) 
 
@@ -104,25 +135,60 @@ while game:
             b.reset()
             b.move()
 
+        for a in asteroids:
+            a.reset()
+            a.move()
+
+        if counter >= 5:
+            finish = True
+
     
         list_collides = sprite.spritecollide(rocket, enemys, False)
         for collide in list_collides:
             if collide:
                 lifes -= 1
+
+                if lifes == 0:
+                    finish = True
+
                 for i in enemys:
-                    i.rect.y = -100
+                    i.rect.y = -random.randint(50, 200)
                     i.rect.x = random.randint(50, 565)
+
+
+        list_collides = sprite.spritecollide(rocket, asteroids, True)
+        for collide in list_collides:
+            if collide:
+                lifes -= 1
+                if lifes == 0:
+                    finish = True
+                asteroid = Asteroid(random.randint(-200, 200), -random.randint(50, 150), 30, 30, random.randint(1,3), "asteroid.png")
+                asteroids.add(asteroid)
+                
 
         list_collides = sprite.groupcollide(enemys, bullets, True, True)
         for collide in list_collides:
             if collide:
                 killed += 1
-                enemy1 = Enemy (random.randint(50, 565), -100, 100, 30, random.randint(1,4), "ufo.png")
+                if killed == 100:
+                    finish = True
+
+                enemy1 = Enemy (random.randint(50, 565), -100, 70, 30, random.randint(1,4), "ufo.png")
                 enemys.add(enemy1)
 
 
         rocket.reset()
         rocket.move()
+
+    if finish == True:
+        if killed == 100:
+            window.blit(font_win.render("YOU WIN", True, (0,255,0)), (250, 240))
+
+        if lifes == 0 or counter == 5:
+            window.blit(font_win.render("YOU LOSE", True, (255,0,0)), (250, 240))
+
+        window.blit(font1.render("For restart press R",True, (255,255,255)), (230, 300))
+
 
     clock.tick(60)
     display.update()
